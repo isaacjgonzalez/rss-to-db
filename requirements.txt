@@ -1,0 +1,3 @@
+feedparser
+html2text
+pymongo

@@ -6,7 +6,6 @@ from datetime import datetime
 from dateutil import parser, tz
 import json
 import feedparser
-#import html2text # Non me gusta esta libreria porque mete markup en vez de puro texto
 from pymongo import MongoClient
 
 
@@ -15,7 +14,7 @@ class Feed:
 		self.info = feed_info
 		self.db = db
 		self.items = []
-		feedparser.USER_AGENT = "MyApp/1.0 +http://example.com/"
+		#feedparser.USER_AGENT = "MyApp/1.0 +http://example.com/"
 
 	def parse_rss(self):
 		feed = feedparser.parse(self.info["url"],self.info["etag"],self.info["modified"])
@@ -30,7 +29,7 @@ class Feed:
 			pass
 		if feed.status ==304:
 			# feed with nothing new
-			print("Etag, last_modifier: ",feed.status)
+			print("Nothing new in feed, etag status: ",feed.status)
 			return ""
 
 		self.info["etag"] = feed.etag
