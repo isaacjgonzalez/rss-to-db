@@ -7,6 +7,11 @@ from dateutil import parser, tz
 import json
 import feedparser
 from pymongo import MongoClient
+from time import mktime
+
+
+def struct_time_to_timestamp(struct_time):
+	return mktime(struct_time)
 
 
 class Feed:
@@ -15,29 +20,68 @@ class Feed:
 		self.db = db
 		self.items = []
 		#feedparser.USER_AGENT = "MyApp/1.0 +http://example.com/"
+		if not "etag" in self.info.keys():
+			self.info["etag"] = ""
+		if not "modified" == self.info.keys():
+			self.info["modified"] = ""
+		if not "last_time_item" in self.info.keys():
+			self.info["last_time_item"] = 0
 
 	def parse_rss(self):
-		feed = feedparser.parse(self.info["url"],self.info["etag"],self.info["modified"])
-		if feed.status == 302:
+		try:
+			feed = feedparser.parse(self.info["url"],self.info["etag"],self.info["modified"])
+			status = feed.status
+		except:
+			print("Error in feedparser: ",feed)
+			return -1
+
+		if status == 302:
 			self.info["url"] = feed.href
 			print("Url moved to: ",feed.href)
-			self.store_feed_info()
+			self.update_feed_info()
 			self.parse_rss()
-			return
-		if feed.status == 401:
+			return 0
+		if status == 401:
 			#feedgone, remove from db
 			pass
-		if feed.status ==304:
+		if status == 304:
 			# feed with nothing new
-			print("Nothing new in feed, etag status: ",feed.status)
-			return ""
+			print("Nothing new in ",self.info["name"],", etag status: ",feed.status)
+			return 0
+		try:
+			self.info["etag"] = feed.etag
+			self.info["modified"] = feed.modified
+		except:
+			pass
 
-		self.info["etag"] = feed.etag
-		self.info["last_modifier"] = feed.modified
+		new_last_time_item = 0
 
 		for entry in feed.entries:
-			print(entry.title)
-			item = {"title" : entry.title, "link" : entry.link, "published_at_str" : entry.published , "published_at_time" : entry.published_parsed, "saved_at" : datetime.now(), "author" : entry.author}
+			#print(entry.title)
+			item = {}
+			try:
+				item["published_at_time"] = struct_time_to_timestamp(entry.published_parsed)
+				#print(item["published_at_time"])
+			except:
+				print("Error in published_parsed")
+
+			# If item is not new, skip
+			if self.info["last_time_item"] > item["published_at_time"]:
+				print(" - Item already in db")
+				continue
+			else:
+				if new_last_time_item <  item["published_at_time"]:
+					new_last_time_item =  item["published_at_time"]
+
+			try:
+				item.update({"title" : entry.title, "link" : entry.link , "saved_at" : datetime.now(), "author" : entry.author})
+			except:
+				print("Error in title, or link, or author")
+
+			try:
+				item["published_at_str"]  = entry.published
+			except:
+				print("Error in published")
 			try:
 				item["content_html"] = entry.description
 			except:
@@ -46,9 +90,15 @@ class Feed:
 			#item["content_text"] = html2text.html2text(item["content_html"])
 			self.items.append(item)
 
+		# Update last item time in feed info
+		if new_last_time_item != 0:
+			self.info["last_time_item"] = new_last_time_item
+
+		return len(self.items)
+
 	def update_feed_info(self):
 		aux = db.replace_one(COLLECTION_NAME_SOURCES,self.info["name"],self.info)
-		print(aux.matched_count)
+		#print(aux.matched_count)
 
 	def store(self):
 		if len(self.items):
@@ -58,8 +108,12 @@ class Feed:
 			self.update_feed_info()
 
 	def print_titles(self):
+		print(self.info["name"])
 		for item in self.items:
-			print(item["title"])
+			try:
+				print(" - ",item["title"])
+			except:
+				print("Error printing titles, full row: ",item)
 
 
 class DatabaseMongo:
@@ -84,7 +138,7 @@ class DatabaseMongo:
 
 ###### MAIN ######
 DB_NAME = "feeds"
-COLLECTION_NAME_SOURCES = "sources"
+COLLECTION_NAME_SOURCES = "0_sources"
 
 pp = pprint.PrettyPrinter(indent=4)
 
