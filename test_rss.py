@@ -27,36 +27,47 @@ class Feed:
 		if not "last_time_item" in self.info.keys():
 			self.info["last_time_item"] = 0
 
-	def parse_rss(self):
+	def run(self):
+		self.print_feed_name()
+		self.fetch_rss()
+		self.parse_rss()
+		self.store()
+		self.print_titles()
+		self.update_feed_info()
+
+
+	def fetch_rss(self):
 		try:
-			feed = feedparser.parse(self.info["url"],self.info["etag"],self.info["modified"])
-			status = feed.status
+			self.feed = feedparser.parse(self.info["url"],self.info["etag"],self.info["modified"])
+			status = self.feed.status
 		except:
-			print("Error in feedparser: ",feed)
+			print(" Error in feedparser: ",self.feed)
 			return -1
 
 		if status == 302:
-			self.info["url"] = feed.href
-			print("Url moved to: ",feed.href)
+			self.info["url"] = self.feed.href
+			print(" Url moved to: ",self.feed.href,". Restart run feed")
 			self.update_feed_info()
-			self.parse_rss()
+			self.run()
 			return 0
 		if status == 401:
 			#feedgone, remove from db
 			pass
 		if status == 304:
 			# feed with nothing new
-			print("Nothing new in ",self.info["name"],", etag status: ",feed.status)
+			print(" Nothing new in ",self.info["name"],", etag status: ",self.feed.status)
 			return 0
 		try:
-			self.info["etag"] = feed.etag
-			self.info["modified"] = feed.modified
+			self.info["etag"] = self.feed.etag
+			self.info["modified"] = self.feed.modified
 		except:
 			pass
 
-		new_last_time_item = 0
+		return 1
 
-		for entry in feed.entries:
+	def parse_rss(self):
+		new_last_time_item = 0
+		for entry in self.feed.entries:
 			#print(entry.title)
 			item = {}
 			try:
@@ -66,8 +77,8 @@ class Feed:
 				print("Error in published_parsed")
 
 			# If item is not new, skip
-			if self.info["last_time_item"] > item["published_at_time"]:
-				print(" - Item already in db")
+			if self.info["last_time_item"] >= item["published_at_time"]:
+				print("  Item already in db")
 				continue
 			else:
 				if new_last_time_item <  item["published_at_time"]:
@@ -76,16 +87,16 @@ class Feed:
 			try:
 				item.update({"title" : entry.title, "link" : entry.link , "saved_at" : datetime.now(), "author" : entry.author})
 			except:
-				print("Error in title, or link, or author")
+				print("  Error in title, or link, or author")
 
 			try:
 				item["published_at_str"]  = entry.published
 			except:
-				print("Error in published")
+				print("  Error in published")
 			try:
 				item["content_html"] = entry.description
 			except:
-				print("Error in content")
+				print("  Error in content")
 
 			#item["content_text"] = html2text.html2text(item["content_html"])
 			self.items.append(item)
@@ -101,19 +112,20 @@ class Feed:
 		#print(aux.matched_count)
 
 	def store(self):
-		if len(self.items):
+		if len(self.items) != 0:
 			# Store all new items
 			transaction_ids = self.db.store_many(self.info["name"],self.items)
 			# Store ETAG, LAST-MODIFIED and time.now in Sources Collection
-			self.update_feed_info()
 
 	def print_titles(self):
-		print(self.info["name"])
 		for item in self.items:
 			try:
 				print(" - ",item["title"])
 			except:
-				print("Error printing titles, full row: ",item)
+				print(" Error printing titles, full row: ",item)
+
+	def print_feed_name(self):
+		print(self.info["name"])
 
 
 class DatabaseMongo:
@@ -137,18 +149,12 @@ class DatabaseMongo:
 
 
 ###### MAIN ######
+#pp = pprint.PrettyPrinter(indent=4)
 DB_NAME = "feeds"
 COLLECTION_NAME_SOURCES = "0_sources"
-
-pp = pprint.PrettyPrinter(indent=4)
-
-
 db = DatabaseMongo('localhost', 27017)
 
-for source in db.read_all(COLLECTION_NAME_SOURCES):
-	feed = Feed(source,db)
-	feed.parse_rss()
-	feed.print_titles()
-	feed.store()
 
-	#print(feed.items[1]["content_text"])
+if __name__ == '__main__':
+	for source in db.read_all(COLLECTION_NAME_SOURCES):
+		Feed(source,db).run()
