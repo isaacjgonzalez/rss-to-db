@@ -23,9 +23,9 @@ def task(n):
     return n / 10
 
 
-ex = futures.ThreadPoolExecutor(max_workers=32)
+ex = futures.ThreadPoolExecutor(max_workers=4)
 print('main: starting')
-results = ex.map(task, range(5, 0, -1))
+results = ex.map(task, range(15, 0, -1))
 print('main: unprocessed results {}'.format(results))
 print('main: waiting for real results')
 real_results = list(results)

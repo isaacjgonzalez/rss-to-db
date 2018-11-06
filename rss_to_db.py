@@ -1,17 +1,24 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+# Common libs
 import pprint
+import json
+import time
 from datetime import datetime
 from dateutil import parser, tz
-import json
+import sys
+# Feed lib
 import feedparser
+# Pymongo lib
 from pymongo import MongoClient
-from time import mktime
+# Threading
+from concurrent import futures
+import threading
 
 
 def struct_time_to_timestamp(struct_time):
-	return mktime(struct_time)
+	return time.mktime(struct_time)
 
 
 class Feed:
@@ -30,11 +37,12 @@ class Feed:
 	def run(self):
 		self.print_feed_name()
 		self.fetch_rss()
-		self.parse_rss()
-		self.store()
-		self.print_titles()
+		number_of_items = self.parse_rss()
+		if number_of_items > 0:
+			self.store()
+			self.print_titles()
 		self.update_feed_info()
-
+		return number_of_items
 
 	def fetch_rss(self):
 		try:
@@ -48,7 +56,7 @@ class Feed:
 			self.info["url"] = self.feed.href
 			print(" Url moved to: ",self.feed.href,". Restart run feed")
 			self.update_feed_info()
-			self.run()
+			self.fetch_rss()
 			return 0
 		if status == 401:
 			#feedgone, remove from db
@@ -155,6 +163,19 @@ COLLECTION_NAME_SOURCES = "0_sources"
 db = DatabaseMongo('localhost', 27017)
 
 
+
+
 if __name__ == '__main__':
-	for source in db.read_all(COLLECTION_NAME_SOURCES):
-		Feed(source,db).run()
+	print("# Add -p to execute the threads. Start:")
+	if len(sys.argv) > 1 and sys.argv[1] == "-p":
+		print("# Threaded executionx")
+		def exec_feed(source):
+			Feed(source,db).run()
+		ex = futures.ThreadPoolExecutor(max_workers=32) # My processor has 4 cores with 8 virtual cores each, so 32 threads in theory
+		results = ex.map(exec_feed, db.read_all(COLLECTION_NAME_SOURCES))
+		print("# Finished threaded execution")
+	else:
+		for source in db.read_all(COLLECTION_NAME_SOURCES):
+			Feed(source,db).run()
+
+	print("# Finsh rss_to_db")
