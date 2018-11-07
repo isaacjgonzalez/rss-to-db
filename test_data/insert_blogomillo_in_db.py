@@ -16,10 +16,10 @@ client = MongoClient('localhost', 27017)[DB_NAME]
 
 with open('blogomillo.txt') as file:
   for line in file:
-      parsed_uri = urlparse(line)
-      name = '{uri.scheme}://{uri.netloc}/'.format(uri=parsed_uri)
+      #parsed_uri = urlparse(line)
+      #name = '{uri.scheme}://{uri.netloc}/'.format(uri=parsed_uri)
 
-      row = {"name":name,"url":line}
+      row = {"name":line,"url":line}
       #print(row)
       insertion_code = client[COLLECTION_NAME_SOURCES].insert(row)
       print(insertion_code)
