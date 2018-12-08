@@ -8,6 +8,7 @@ import time
 from datetime import datetime
 from dateutil import parser, tz
 import sys
+import os
 # Feed lib
 import feedparser
 # Pymongo lib
@@ -15,7 +16,10 @@ from pymongo import MongoClient
 # Threading
 from concurrent import futures
 import threading
-
+# Parse command line arguments
+import argparse
+# Chain map allow the code to make assigns in cascade Argument, ENV, default
+from collections import ChainMap
 
 def struct_time_to_timestamp(struct_time):
 	return time.mktime(struct_time)
@@ -139,7 +143,7 @@ class Feed:
 		return len(self.items)
 
 	def update_feed_info(self):
-		aux = db.replace_one(COLLECTION_NAME_SOURCES,self.info["name"],self.info)
+		aux = db.replace_one(ENV["DB_COLLECTION_SOURCES"],self.info["name"],self.info)
 		#print(aux.matched_count)
 
 	def store(self):
@@ -170,7 +174,7 @@ class Feed:
 class DatabaseMongo:
 	def __init__(self,host,port):
 		client = MongoClient(host, port)
-		self.db = client[DB_NAME]
+		self.db = client[ENV["DB_NAME"]]
 
 	def store(self,collection,row):
 		return self.db[collection].insert(row)
@@ -186,23 +190,38 @@ class DatabaseMongo:
 
 
 ###### MAIN ######
-#pp = pprint.PrettyPrinter(indent=4)
-DB_NAME = "feeds"
-COLLECTION_NAME_SOURCES = "0_sources"
-db = DatabaseMongo('localhost', 27017)
-
 if __name__ == '__main__':
-	print("# Add -p to execute the threads. Start:")
-	if len(sys.argv) > 1 and sys.argv[1] == "-p":
+	# DEFAULT ENV
+	default_env = {"DB_NAME":"feeds","DB_COLLECTION_SOURCES":"0_sources","DB_HOST":"localhost","DB_PORT": "27017","EXECUTION":"Threaded"}
+
+	# Command line argument parser
+	parser = argparse.ArgumentParser(prog="rss_to_db",description='Check rss urls for new content and store it',epilog="Execution or rss_to_db finished!")
+	#parser.add_argument("-s",'--sequential', action='store_true',help="Execute the program scuentially, instead of the default threaded execution")
+	for key in default_env:
+		parser.add_argument("--"+key)
+	args = parser.parse_args()
+	command_line_arguments = {key:value for key, value in vars(args).items() if value}
+
+
+	os_env = {key:value for key, value in os.environ.items() if (key in default_env)}
+	print(os_env)
+
+	ENV = ChainMap(command_line_arguments, os_env, default_env) # Especial dict in with when access to a key, use the key with more priority if it exists
+
+	print(ENV)
+
+	# DB Initialization
+	db = DatabaseMongo(ENV["DB_HOST"],  int(ENV["DB_PORT"]))
+
+	# Execution
+	if ENV["EXECUTION"] == "sequential":
+		print("# Sequence execution")
+		for source in db.read_all(ENV["DB_COLLECTION_SOURCES"]):
+			Feed(source,db).run()
+	else:
 		print("# Threaded execution")
 		def exec_feed(source):
 			Feed(source,db).run()
 		ex = futures.ThreadPoolExecutor(max_workers=32) # My processor has 4 cores with 8 virtual cores each, so 32 threads in theory
-		results = ex.map(exec_feed, db.read_all(COLLECTION_NAME_SOURCES))
+		results = ex.map(exec_feed, db.read_all(ENV["DB_COLLECTION_SOURCES"]))
 		print("# Finished threaded execution")
-	else:
-		print("# Sequence execution")
-		for source in db.read_all(COLLECTION_NAME_SOURCES):
-			Feed(source,db).run()
-
-	print("# Finsh rss_to_db")
