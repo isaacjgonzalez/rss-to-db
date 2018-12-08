@@ -195,20 +195,17 @@ if __name__ == '__main__':
 	default_env = {"DB_NAME":"feeds","DB_COLLECTION_SOURCES":"0_sources","DB_HOST":"localhost","DB_PORT": "27017","EXECUTION":"Threaded"}
 
 	# Command line argument parser
-	parser = argparse.ArgumentParser(prog="rss_to_db",description='Check rss urls for new content and store it',epilog="Execution or rss_to_db finished!")
-	#parser.add_argument("-s",'--sequential', action='store_true',help="Execute the program scuentially, instead of the default threaded execution")
+	parser = argparse.ArgumentParser(prog="rss_to_db",usage="rss_to_db [--variable value]",description='Check rss urls for new content and store it',epilog="Execution or rss_to_db finished!")
 	for key in default_env:
 		parser.add_argument("--"+key)
 	args = parser.parse_args()
 	command_line_arguments = {key:value for key, value in vars(args).items() if value}
 
-
+	# os_env get the environment vars only if they exist in the default env of the this program
 	os_env = {key:value for key, value in os.environ.items() if (key in default_env)}
-	print(os_env)
 
-	ENV = ChainMap(command_line_arguments, os_env, default_env) # Especial dict in with when access to a key, use the key with more priority if it exists
-
-	print(ENV)
+	# Especial dict in with when access to a key, use the key with more priority if it exists
+	ENV = ChainMap(command_line_arguments, os_env, default_env)
 
 	# DB Initialization
 	db = DatabaseMongo(ENV["DB_HOST"],  int(ENV["DB_PORT"]))
