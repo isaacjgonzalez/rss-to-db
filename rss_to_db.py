@@ -32,6 +32,10 @@ class Feed:
 		self.db = db
 		self.items = []
 		self.errors = []
+		if "collection" in feed_info:
+			self.collection = feed_info["collection"]
+		else:
+			self.collection = feed_info["name"]
 		#feedparser.USER_AGENT = "MyApp/1.0 +http://example.com/"
 		if not "etag" in self.info.keys():
 			self.info["etag"] = ""
@@ -149,8 +153,7 @@ class Feed:
 	def store(self):
 		if len(self.items) != 0:
 			# Store all new items
-			transaction_ids = self.db.store_many(self.info["name"],self.items)
-			# Store ETAG, LAST-MODIFIED and time.now in Sources Collection
+			transaction_ids = self.db.store_many(self.info["collection"],self.items)
 
 	def print_titles(self):
 		for item in self.items:
