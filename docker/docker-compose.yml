@@ -14,4 +14,4 @@ services:
       - 'PATH=/usr/local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'
       - FLASK_APP=news.py
     ports:
-      - '80:80'
+      - '5000:5000'
