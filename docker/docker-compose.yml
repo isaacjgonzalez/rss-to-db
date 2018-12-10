@@ -4,10 +4,6 @@ services:
     image: mongo
     ports:
       - '27017:27017'
-  newspaper-api:
-    image: smarp/newspaper-api
-    ports:
-      - '5000:38765'
   newspaper3k-docker:
     image: prananth/newspaper3k-docker
     environment:

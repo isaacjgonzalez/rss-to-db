@@ -18,7 +18,6 @@ def imglink(url):
     data_json = json.dumps(data)
     headers = {'Content-type': 'application/json'}
     r = requests.post(url="http://0.0.0.0:5000/article/imglink", data=data_json, headers=headers)
-
     return r.text.strip('"')
 
 
