@@ -33,9 +33,9 @@ class Feed:
 		self.items = []
 		self.errors = []
 		if "collection" in feed_info:
-			self.collection = feed_info["collection"]
+			self.info["collection"] = feed_info["collection"]
 		else:
-			self.collection = feed_info["name"]
+			self.info["collection"] = feed_info["name"]
 		#feedparser.USER_AGENT = "MyApp/1.0 +http://example.com/"
 		if not "etag" in self.info.keys():
 			self.info["etag"] = ""
@@ -53,6 +53,7 @@ class Feed:
 		if number_of_items > 0:
 			self.store()
 			#.print_titles()
+		self.enhance_newspaper()
 		self.update_feed_info()
 		print(self.create_log_info())
 		if len(self.errors)>0:
@@ -145,6 +146,12 @@ class Feed:
 			self.info["last_time_item"] = new_last_time_item
 
 		return len(self.items)
+
+	def enhance_newspaper(self):
+		for item in self.items:
+			if "link" in item:
+				print(item["link"])
+		return 0
 
 	def update_feed_info(self):
 		aux = db.replace_one(ENV["DB_COLLECTION_SOURCES"],self.info["name"],self.info)
