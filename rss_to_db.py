@@ -184,9 +184,9 @@ class Feed:
 
 
 class DatabaseMongo:
-	def __init__(self,host,port):
+	def __init__(self,host,port,db_name):
 		client = MongoClient(host, port)
-		self.db = client[ENV["DB_NAME"]]
+		self.db = client[db_name]
 
 	def store(self,collection,row):
 		return self.db[collection].insert(row)
@@ -200,11 +200,53 @@ class DatabaseMongo:
 	def replace_one(self,collection,name,row):
 		return self.db[collection].replace_one({"name":name},row)
 
+# Some parameters are useless but we keep they to have the same functions than the rest of the db objects (in the future we will make a strategy pattern to encapsulate everything under a parent class)
+class DatabaseFile:
+	def __init__(self,host,port,db_name):
+		self.db = db_name + "/"
+
+	# Function to append a json "manually" to a file to avoid load all the file and join and store
+	def append_to_json(self,json_dump,path):
+		with open(path, 'ab+') as f:
+			f.seek(0,2)                                #Go to the end of file
+			if f.tell() == 0 :                         #Check if file is empty
+				f.write(json_dump.encode())  #If empty, write an array
+			else :
+				f.seek(-1,2)
+				f.truncate()                           #Remove the last character, open the array
+				f.write(' , '.encode())                #Write the separator
+				f.write(json_dump.encode())    #Dump the dictionary
+				f.write(']'.encode())
+
+	def store(self,collection,row):
+		self.append_to_json(json.dumps(row,default=str),self.db+collection+".json") # Default=str transform dates in str, wich is not recommended to use but solve the problem "TypeError: Object of type 'datetime' is not JSON serializable"
+		return 1
+
+	def store_many(self,collection,rows):
+		self.append_to_json(json.dumps(rows,default=str)[1:-1],self.db+collection+".json") # [1:-1] remove the "[" and "]" to append fastly
+		return 1
+
+	def read_all(self,useless):
+		result = []
+		for file in os.listdir(self.db):
+			if file.endswith(".conf"):
+				with open(self.db+file) as f:
+					data = json.load(f)
+					data["name"] = file[:-5] # The name of the feed should be the one in the filename
+				result.append(data)
+		return result
+
+	def replace_one(self,collection,name,row):
+		with open(self.db+"/"+name+".conf", "w") as myfile:
+			myfile.write(json.dumps(row))
+		return 1
+
+
 
 ###### MAIN ######
 if __name__ == '__main__':
 	# DEFAULT ENV
-	default_env = {"DB_NAME":"feeds","DB_COLLECTION_SOURCES":"0_sources","DB_HOST":"localhost","DB_PORT": "27017","EXECUTION":"Threaded"}
+	default_env = {"DB_TYPE":"MONGO","DB_NAME":"feeds","DB_COLLECTION_SOURCES":"0_sources","DB_HOST":"localhost","DB_PORT": "27017","EXECUTION":"Threaded"}
 
 	# Command line argument parser
 	parser = argparse.ArgumentParser(prog="rss_to_db",usage="rss_to_db [--variable value]",description='Check rss urls for new content and store it',epilog="Execution or rss_to_db finished!")
@@ -220,8 +262,10 @@ if __name__ == '__main__':
 	ENV = ChainMap(command_line_arguments, os_env, default_env)
 
 	# DB Initialization
-	db = DatabaseMongo(ENV["DB_HOST"],  int(ENV["DB_PORT"]))
-
+	if ENV["DB_TYPE"] in ["MONGODB","MONGO"]:
+		db = DatabaseMongo(ENV["DB_HOST"],  int(ENV["DB_PORT"]),ENV["DB_NAME"])
+	elif ENV["DB_TYPE"] in ["FILE"]:
+		db = DatabaseFile("","",ENV["DB_NAME"])
 	# Execution
 	if ENV["EXECUTION"] == "sequential":
 		print("# Sequence execution")
