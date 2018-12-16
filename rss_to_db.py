@@ -20,6 +20,8 @@ import threading
 import argparse
 # Chain map allow the code to make assigns in cascade Argument, ENV, default
 from collections import ChainMap
+# Wget to download enclosures
+import wget
 
 def struct_time_to_timestamp(struct_time):
 	return time.mktime(struct_time)
