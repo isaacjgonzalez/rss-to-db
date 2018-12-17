@@ -169,7 +169,20 @@ class Feed:
 			return -1
 		return 1
 
-	
+	def enhance_newspaper(self):
+		for i in range(len(self.items)):
+			item = self.items[i]
+			if "link" in item:
+				try:
+					article = Article(item["link"])
+					article.download()
+					article.parse()
+					self.items[i]["full_text-newspaper3k"] = article.text
+					self.items[i]["image-newspaper3k"] = article.top_image
+					self.items[i]["image-newspaper3k"] = " ".join(article.movies)
+				except Exception as e:
+					self.errors.append(" Warn no Newspaper3K: " + str(e))
+		return 0
 
 	def update_feed_info(self):
 		aux = db.replace_one(ENV["DB_COLLECTION_SOURCES"],self.info["name"],self.info)
