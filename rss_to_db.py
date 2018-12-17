@@ -22,6 +22,10 @@ import argparse
 from collections import ChainMap
 # Wget to download enclosures
 import wget
+# Newspaper3K is a library to download full text content and other
+from newspaper import Article
+
+
 
 def struct_time_to_timestamp(struct_time):
 	return time.mktime(struct_time)
@@ -54,7 +58,10 @@ class Feed:
 		number_of_items = self.parse_rss()
 		if number_of_items > 0:
 			self.store()
-			#.print_titles()
+			#.print_titles
+
+		if ENV["DOWNLOAD"] == "ON":
+			self.enclosures()
 		self.enhance_newspaper()
 		self.update_feed_info()
 		print(self.create_log_info())
@@ -66,8 +73,8 @@ class Feed:
 		try:
 			self.feed = feedparser.parse(self.info["url"],self.info["etag"],self.info["modified"])
 			status = self.feed.status
-		except:
-			self.errors.append(" Feedparser:"+str(self.feed))
+		except Exception as e:
+			self.errors.append(" Feedparser "+str(self.feed)+" e: "+str(e))
 			return -1
 		if self.feed.bozo == 1:
 			# XML not well-formed, consider to delete from Sources
@@ -119,8 +126,8 @@ class Feed:
 				else:
 					if new_last_time_item <  item["published_at_time"]:
 						new_last_time_item =  item["published_at_time"]
-			except:
-				self.errors.append(" Error in published_parsed!")
+			except Exception as e:
+				self.errors.append(" Error in published_parsed! " + str(e))
 
 			try:
 				item.update({"title" : entry.title, "link" : entry.link , "saved_at" : datetime.now()})
@@ -130,7 +137,7 @@ class Feed:
 				item["author"] = entry.author
 			except:
 				item["author"] = ""
-				self.errors.append(" Error in author")
+				self.errors.append(" Warning: no author")
 			try:
 				item["published_at_str"]  = entry.published
 			except:
@@ -139,6 +146,10 @@ class Feed:
 				item["content_html"] = entry.description
 			except:
 				self.errors.append(" Error in content")
+			try:
+				item["enclosure"] = entry.enclosures[0]["href"]
+			except:
+				self.errors.append(" Warning: no enclosure")
 
 			#item["content_text"] = html2text.html2text(item["content_html"])
 			self.items.append(item)
@@ -149,11 +160,16 @@ class Feed:
 
 		return len(self.items)
 
-	def enhance_newspaper(self):
-		for item in self.items:
-			if "link" in item:
-				print(item["link"])
-		return 0
+	def enclosures(self):
+		try:
+			for item in self.items:
+				self.db.download(self.info["name"],item["enclosure"])
+		except:
+			self.errors.append(" Error in enclosure download")
+			return -1
+		return 1
+
+	
 
 	def update_feed_info(self):
 		aux = db.replace_one(ENV["DB_COLLECTION_SOURCES"],self.info["name"],self.info)
@@ -200,6 +216,9 @@ class DatabaseMongo:
 	def replace_one(self,collection,name,row):
 		return self.db[collection].replace_one({"name":name},row)
 
+	def download(self,url_file):
+		return "No download compatibility in this kind of db"
+
 # Some parameters are useless but we keep they to have the same functions than the rest of the db objects (in the future we will make a strategy pattern to encapsulate everything under a parent class)
 class DatabaseFile:
 	def __init__(self,host,port,db_name):
@@ -208,14 +227,14 @@ class DatabaseFile:
 	# Function to append a json "manually" to a file to avoid load all the file and join and store
 	def append_to_json(self,json_dump,path):
 		with open(path, 'ab+') as f:
-			f.seek(0,2)                                #Go to the end of file
-			if f.tell() == 0 :                         #Check if file is empty
-				f.write(json_dump.encode())  #If empty, write an array
+			f.seek(0,2)                                	#Go to the end of file
+			if f.tell() == 0 :                         	#Check if file is empty
+				f.write(json_dump.encode())  			#If empty, write an array
 			else :
 				f.seek(-1,2)
-				f.truncate()                           #Remove the last character, open the array
-				f.write(' , '.encode())                #Write the separator
-				f.write(json_dump.encode())    #Dump the dictionary
+				f.truncate()                           	#Remove the last character, open the array
+				f.write(' , '.encode())                	#Write the separator
+				f.write(json_dump.encode())    			#Dump the dictionary
 				f.write(']'.encode())
 
 	def store(self,collection,row):
@@ -232,13 +251,27 @@ class DatabaseFile:
 			if file.endswith(".conf"):
 				with open(self.db+file) as f:
 					data = json.load(f)
-					data["name"] = file[:-5] # The name of the feed should be the one in the filename
+					data["name"] = file[:-5].replace(" ", "_") # The name of the feed should be the one in the filename
 				result.append(data)
 		return result
 
 	def replace_one(self,collection,name,row):
-		with open(self.db+"/"+name+".conf", "w") as myfile:
+		with open(self.db+name+".conf", "w") as myfile:
 			myfile.write(json.dumps(row))
+		return 1
+
+	def download(self,collection,url_file):
+		print("Try to downlod ", url_file)
+		if not os.path.exists(self.db + collection):
+			os.makedirs(self.db + collection)
+		try:
+			filename = url_file[url_file.rfind("/")+1:]
+			file = wget.download(url_file)
+			os.rename(file,self.db + collection+"/"+file)
+		except Exception as e:
+			print(" Error downloading with WGET: ",filename," e: ",e)
+		finally:
+			print(" Download finished ", file)
 		return 1
 
 
@@ -246,7 +279,7 @@ class DatabaseFile:
 ###### MAIN ######
 if __name__ == '__main__':
 	# DEFAULT ENV
-	default_env = {"DB_TYPE":"MONGO","DB_NAME":"feeds","DB_COLLECTION_SOURCES":"0_sources","DB_HOST":"localhost","DB_PORT": "27017","EXECUTION":"Threaded"}
+	default_env = {"DB_TYPE":"MONGO","DB_NAME":"feeds","DB_COLLECTION_SOURCES":"0_sources","DB_HOST":"localhost","DB_PORT": "27017","EXECUTION":"Threaded","DOWNLOAD":"OFF"}
 
 	# Command line argument parser
 	parser = argparse.ArgumentParser(prog="rss_to_db",usage="rss_to_db [--variable value]",description='Check rss urls for new content and store it',epilog="Execution or rss_to_db finished!")
@@ -262,10 +295,10 @@ if __name__ == '__main__':
 	ENV = ChainMap(command_line_arguments, os_env, default_env)
 
 	# DB Initialization
-	if ENV["DB_TYPE"] in ["MONGODB","MONGO"]:
-		db = DatabaseMongo(ENV["DB_HOST"],  int(ENV["DB_PORT"]),ENV["DB_NAME"])
-	elif ENV["DB_TYPE"] in ["FILE"]:
+	if ENV["DB_TYPE"] in ["FILE"] or ENV["DOWNLOAD"] is "ON":
 		db = DatabaseFile("","",ENV["DB_NAME"])
+	elif ENV["DB_TYPE"] in ["MONGODB","MONGO"]:
+		db = DatabaseMongo(ENV["DB_HOST"],  int(ENV["DB_PORT"]),ENV["DB_NAME"])
 	# Execution
 	if ENV["EXECUTION"] == "sequential":
 		print("# Sequence execution")
