@@ -56,13 +56,11 @@ class Feed:
 		if fetch_code <0:
 			return -1
 		number_of_items = self.parse_rss()
+		self.enhance_newspaper()
 		if number_of_items > 0:
 			self.store()
-			#.print_titles
-
 		if ENV["DOWNLOAD"] == "ON":
 			self.enclosures()
-		self.enhance_newspaper()
 		self.update_feed_info()
 		print(self.create_log_info())
 		if len(self.errors)>0:
@@ -147,6 +145,7 @@ class Feed:
 			except:
 				self.errors.append(" Error in content")
 			try:
+				# Only getting the link to the first element of the enclosure, it depends on how rss is formed and maybe podcast need to get more links
 				item["enclosure"] = entry.enclosures[0]["href"]
 			except:
 				self.errors.append(" Warning: no enclosure")
@@ -171,10 +170,9 @@ class Feed:
 
 	def enhance_newspaper(self):
 		for i in range(len(self.items)):
-			item = self.items[i]
-			if "link" in item:
+			if "link" in self.items[i]:
 				try:
-					article = Article(item["link"])
+					article = Article(self.items[i]["link"])
 					article.download()
 					article.parse()
 					self.items[i]["full_text-newspaper3k"] = article.text
