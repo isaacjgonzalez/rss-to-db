@@ -1,5 +1,5 @@
 feedparser
 html2text
 pymongo
-newspaper
+newspaper3k
 wget
