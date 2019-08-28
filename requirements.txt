@@ -3,3 +3,4 @@ html2text
 pymongo
 newspaper3k
 wget
+schedule

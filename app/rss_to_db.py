@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
 # Common libs
@@ -310,6 +310,7 @@ if __name__ == '__main__':
 		db = DatabaseFile("","",ENV["DB_NAME"])
 	elif ENV["DB_TYPE"] in ["MONGODB","MONGO"]:
 		db = DatabaseMongo(ENV["DB_HOST"],  int(ENV["DB_PORT"]),ENV["DB_NAME"])
+
 	# Execution
 	if ENV["EXECUTION"] == "sequential":
 		print("# Sequence execution")
