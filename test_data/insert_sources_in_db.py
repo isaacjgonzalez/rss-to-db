@@ -6,14 +6,19 @@
 import csv
 from pymongo import MongoClient
 import re
+import os
 
 DB_NAME = "feeds"
 COLLECTION_NAME_SOURCES = "0_sources"
+path = os.path.dirname(os.path.abspath(__file__))
+db_port = os.environ['DB_PORT']
+if db_port == "":
+    db_port = 27017
 
-client = MongoClient('localhost', 27017)[DB_NAME]
+client = MongoClient('localhost', db_port)[DB_NAME]
 
 
-with open('sources.tsv') as file:
+with open(path+'sources.tsv') as file:
   for line in file:
       print(line)
       elements = re.findall(r'\S+', line)
