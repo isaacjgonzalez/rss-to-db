@@ -177,7 +177,7 @@ class Feed:
 					article.parse()
 					self.items[i]["full_text-newspaper3k"] = article.text
 					self.items[i]["image-newspaper3k"] = article.top_image
-					self.items[i]["image-newspaper3k"] = " ".join(article.movies)
+					self.items[i]["movies-newspaper3k"] = " ".join(article.movies)
 				except Exception as e:
 					self.errors.append(" Warn no Newspaper3K: " + str(e))
 		return 0
@@ -288,38 +288,41 @@ class DatabaseFile:
 
 
 ###### MAIN ######
-if __name__ == '__main__':
-	# DEFAULT ENV
-	default_env = {"DB_TYPE":"MONGO","DB_NAME":"feeds","DB_COLLECTION_SOURCES":"0_sources","DB_HOST":"localhost","DB_PORT": "27017","EXECUTION":"Threaded","DOWNLOAD":"OFF"}
 
-	# Command line argument parser
+# Default ENV
+default_env = {"DB_TYPE":"MONGO","DB_NAME":"feeds","DB_COLLECTION_SOURCES":"0_sources","DB_HOST":"localhost","DB_PORT": "27017","THREADS":"32","DOWNLOAD":"OFF"}
+# Command line ENV
+command_line_arguments = {}
+# Operative System ENV
+os_env = {key:value for key, value in os.environ.items() if (key in default_env)} # os_env get the environment vars only if they exist in the default env of the this program
+
+# Command line argument parser
+if __name__ == '__main__':
 	parser = argparse.ArgumentParser(prog="rss_to_db",usage="rss_to_db [--variable value]",description='Check rss urls for new content and store it',epilog="Execution or rss_to_db finished!")
 	for key in default_env:
 		parser.add_argument("--"+key)
 	args = parser.parse_args()
 	command_line_arguments = {key:value for key, value in vars(args).items() if value}
 
-	# os_env get the environment vars only if they exist in the default env of the this program
-	os_env = {key:value for key, value in os.environ.items() if (key in default_env)}
+# Generate ENV first with command line ENV, then Operative system ENV and last with default_env
+ENV = ChainMap(command_line_arguments, os_env, default_env) # ENV is a special dict made by several dict, when access to a key, use the key with more priority if it exists
 
-	# Especial dict in with when access to a key, use the key with more priority if it exists
-	ENV = ChainMap(command_line_arguments, os_env, default_env)
+# DB Initialization
+if ENV["DB_TYPE"] in ["FILE"] or ENV["DOWNLOAD"] is "ON":
+	db = DatabaseFile("","",ENV["DB_NAME"])
+elif ENV["DB_TYPE"] in ["MONGODB","MONGO"]:
+	db = DatabaseMongo(ENV["DB_HOST"],  int(ENV["DB_PORT"]),ENV["DB_NAME"])
 
-	# DB Initialization
-	if ENV["DB_TYPE"] in ["FILE"] or ENV["DOWNLOAD"] is "ON":
-		db = DatabaseFile("","",ENV["DB_NAME"])
-	elif ENV["DB_TYPE"] in ["MONGODB","MONGO"]:
-		db = DatabaseMongo(ENV["DB_HOST"],  int(ENV["DB_PORT"]),ENV["DB_NAME"])
-
-	# Execution
-	if ENV["EXECUTION"] == "sequential":
-		print("# Sequence execution")
-		for source in db.read_all(ENV["DB_COLLECTION_SOURCES"]):
-			Feed(source,db).run()
-	else:
-		print("# Threaded execution")
-		def exec_feed(source):
-			Feed(source,db).run()
-		ex = futures.ThreadPoolExecutor(max_workers=32) # My processor has 4 cores with 8 virtual cores each, so 32 threads in theory
+# Execution
+threads = int(ENV["THREADS"])
+if threads > 1:
+	print("# Threaded execution (",threads,")")
+	def exec_feed(source):
+		Feed(source,db).run()
+	with futures.ThreadPoolExecutor(max_workers=threads) as ex:
 		results = ex.map(exec_feed, db.read_all(ENV["DB_COLLECTION_SOURCES"]))
-		print("# Finished threaded execution")
+	print("# Finished threaded execution")
+else:
+	print("# Sequence execution")
+	for source in db.read_all(ENV["DB_COLLECTION_SOURCES"]):
+		Feed(source,db).run()

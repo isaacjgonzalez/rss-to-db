@@ -4,6 +4,10 @@
 import schedule
 import time
 
+import rss_to_db
+
+
+
 def job():
     import rss_to_db
 
