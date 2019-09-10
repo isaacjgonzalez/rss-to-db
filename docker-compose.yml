@@ -1,0 +1,8 @@
+version: '2'
+services:
+  mongo:
+    image: mongo
+    ports:
+      - '27117:27017'
+  rss_to_db:
+    build: .
