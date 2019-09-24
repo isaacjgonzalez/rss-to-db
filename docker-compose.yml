@@ -3,6 +3,8 @@ services:
   mongo:
     image: mongo
     ports:
-      - '27117:27017'
+      - "27117:27017"
   rss_to_db:
+    env_file:
+     - .env
     build: .
