@@ -290,7 +290,7 @@ class DatabaseFile:
 ###### MAIN ######
 
 # Default ENV
-default_env = {"DB_TYPE":"MONGO","DB_NAME":"feeds","DB_COLLECTION_SOURCES":"0_sources","DB_HOST":"localhost","DB_PORT": "27017","THREADS":"32","DOWNLOAD":"OFF"}
+default_env = {"DB_TYPE":"MONGO","DB_NAME":"feeds","DB_COLLECTION_SOURCES":"0_sources","DB_HOST":"localhost","DB_PORT": "27117","THREADS":"32","DOWNLOAD":"OFF"}
 # Command line ENV
 command_line_arguments = {}
 # Operative System ENV
@@ -312,17 +312,24 @@ if ENV["DB_TYPE"] in ["FILE"] or ENV["DOWNLOAD"] is "ON":
 	db = DatabaseFile("","",ENV["DB_NAME"])
 elif ENV["DB_TYPE"] in ["MONGODB","MONGO"]:
 	db = DatabaseMongo(ENV["DB_HOST"],  int(ENV["DB_PORT"]),ENV["DB_NAME"])
+# Initialize data (not sure how to initilize data)
+if False && db.read_all(ENV["DB_COLLECTION_SOURCES"]).count() == 0: # WE HAVE TO FIX THIS
+	import test_data.insert_sources_in_db
+	test_data.insert_sources_in_db.execute()
 
+# Execute the script
+def execute():
+	threads = int(ENV["THREADS"])
+	if threads > 1:
+		print("# Threaded execution (",threads,")")
+		def exec_feed(source):
+			Feed(source,db).run()
+		with futures.ThreadPoolExecutor(max_workers=threads) as ex:
+			results = ex.map(exec_feed, db.read_all(ENV["DB_COLLECTION_SOURCES"]))
+		print("# Finished threaded execution")
+	else:
+		print("# Sequence execution")
+		for source in db.read_all(ENV["DB_COLLECTION_SOURCES"]):
+			Feed(source,db).run()
 # Execution
-threads = int(ENV["THREADS"])
-if threads > 1:
-	print("# Threaded execution (",threads,")")
-	def exec_feed(source):
-		Feed(source,db).run()
-	with futures.ThreadPoolExecutor(max_workers=threads) as ex:
-		results = ex.map(exec_feed, db.read_all(ENV["DB_COLLECTION_SOURCES"]))
-	print("# Finished threaded execution")
-else:
-	print("# Sequence execution")
-	for source in db.read_all(ENV["DB_COLLECTION_SOURCES"]):
-		Feed(source,db).run()
+execute()

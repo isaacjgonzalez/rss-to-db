@@ -11,7 +11,7 @@ from urllib.parse import urlparse
 DB_NAME = "feeds"
 COLLECTION_NAME_SOURCES = "0_sources"
 
-client = MongoClient('localhost', 27017)[DB_NAME]
+client = MongoClient('localhost', 27117)[DB_NAME]
 
 
 with open('blogomillo.txt') as file:

@@ -9,12 +9,15 @@ import rss_to_db
 
 
 def job():
-    import rss_to_db
+    rss_to_db.execute()
 
 
 schedule.every().hour.do(job)
 
 
+# First execution
+rss_to_db.execute()
+# Sheduled execution
 while True:
     schedule.run_pending()
     time.sleep(1)
