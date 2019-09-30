@@ -24,6 +24,8 @@ from collections import ChainMap
 import wget
 # Newspaper3K is a library to download full text content and other
 from newspaper import Article
+# Opengraph lib to extract top_image
+import opengraph
 
 
 
@@ -57,6 +59,7 @@ class Feed:
 			return -1
 		number_of_items = self.parse_rss()
 		self.enhance_newspaper()
+		self.enhance_opengraph()
 		if number_of_items > 0:
 			self.store()
 		if ENV["DOWNLOAD"] == "ON":
@@ -182,6 +185,16 @@ class Feed:
 					self.errors.append(" Warn no Newspaper3K: " + str(e))
 		return 0
 
+	def enhance_opengraph(self):
+		for i in range(len(self.items)):
+			if "link" in self.items[i]:
+				try:
+					opengraph_item = opengraph.OpenGraph(url=self.items[i]["link"])
+					self.items[i]["image-opengraph"] = opengraph_item.image
+				except Exception as e:
+					self.errors.append(" Warn no Opengraph: " + str(e))
+		return 0
+
 	def update_feed_info(self):
 		aux = db.replace_one(ENV["DB_COLLECTION_SOURCES"],self.info["name"],self.info)
 		#print(aux.matched_count)
@@ -290,7 +303,7 @@ class DatabaseFile:
 ###### MAIN ######
 
 # Default ENV
-default_env = {"DB_TYPE":"MONGO","DB_NAME":"feeds","DB_COLLECTION_SOURCES":"0_sources","DB_HOST":"localhost","DB_PORT": "27117","THREADS":"32","DOWNLOAD":"OFF"}
+default_env = {"DB_TYPE":"MONGO","DB_NAME":"feeds","DB_COLLECTION_SOURCES":"0_sources","DB_HOST":"localhost","DB_PORT": "27017","THREADS":"32","DOWNLOAD":"OFF"}
 # Command line ENV
 command_line_arguments = {}
 # Operative System ENV
@@ -313,7 +326,7 @@ if ENV["DB_TYPE"] in ["FILE"] or ENV["DOWNLOAD"] is "ON":
 elif ENV["DB_TYPE"] in ["MONGODB","MONGO"]:
 	db = DatabaseMongo(ENV["DB_HOST"],  int(ENV["DB_PORT"]),ENV["DB_NAME"])
 # Initialize data (not sure how to initilize data)
-if False && db.read_all(ENV["DB_COLLECTION_SOURCES"]).count() == 0: # WE HAVE TO FIX THIS
+if False and db.read_all(ENV["DB_COLLECTION_SOURCES"]).count() == 0: # WE HAVE TO FIX THIS
 	import test_data.insert_sources_in_db
 	test_data.insert_sources_in_db.execute()
 

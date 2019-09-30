@@ -4,3 +4,4 @@ pymongo
 newspaper3k
 wget
 schedule
+python-opengraph
