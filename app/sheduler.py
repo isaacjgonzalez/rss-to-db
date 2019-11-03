@@ -16,6 +16,7 @@ schedule.every().hour.do(job)
 
 
 # First execution
+print("First execution")
 rss_to_db.execute()
 # Sheduled execution
 while True:

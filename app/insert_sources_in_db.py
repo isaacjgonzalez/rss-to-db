@@ -15,7 +15,7 @@ def insert_sources_in_db(filename,name_position,collection_position,feed_url_pos
     print(path)
 
     if 'DB_PORT' in os.environ:
-        db_port = os.environ['DB_PORT']
+        db_port = int(os.environ['DB_PORT'])
     else:
         db_port = 27017
     if 'DB_HOST' in os.environ:

@@ -1,24 +1,21 @@
 version: '3'
 services:
   rss-to-db:
-    container_name: "rss-to-db"
-    image: "rss-to-db"
-    environment:
-      WAIT_HOSTS: mongo:27017
-    env_file: # Non funcionan estas variables non sei porqué
+    container_name: "rsstodb"
+    image: "rss-to-db:lastest"
+    env_file:
      - .env
     depends_on:
     - "mongo"
     build: .
 
   mongo:
-    image: mongo
+    image: mongo:4.2
     ports:
       - "27017:27017"
-
     #environment:
     #  - MONGO_DATA_DIR=/data/db
     #  - MONGO_LOG_DIR=/dev/null
     #volumes:
     #  - ./data/db:/data/db
-    command: mongod --user mongodb --logpath=/dev/null # --quiet
+    command: mongod --logpath=/dev/null # --quiet
