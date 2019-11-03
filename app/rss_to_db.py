@@ -321,20 +321,20 @@ if __name__ == '__main__':
 ENV = ChainMap(command_line_arguments, os_env, default_env) # ENV is a special dict made by several dict, when access to a key, use the key with more priority if it exists
 
 # DB Initialization
-if ENV["DB_TYPE"] in ["FILE"] or ENV["DOWNLOAD"] is "ON":
+if ENV["DB_TYPE"] in ["FILE"] or ENV["DOWNLOAD"] == "ON":
 	db = DatabaseFile("","",ENV["DB_NAME"])
 elif ENV["DB_TYPE"] in ["MONGODB","MONGO"]:
 	db = DatabaseMongo(ENV["DB_HOST"],  int(ENV["DB_PORT"]),ENV["DB_NAME"])
-# Initialize data (not sure how to initilize data)
-if False and db.read_all(ENV["DB_COLLECTION_SOURCES"]).count() == 0: # WE HAVE TO FIX THIS
-	import test_data.insert_sources_in_db
-	test_data.insert_sources_in_db.execute()
+# Initialize data
+if db.read_all(ENV["DB_COLLECTION_SOURCES"]).count() == 0:
+	import insert_sources_in_db
+
 
 # Execute the script
 def execute():
 	threads = int(ENV["THREADS"])
 	if threads > 1:
-		print("# Threaded execution (",threads,")")
+		print("# Threaded execution (",threads," threads)")
 		def exec_feed(source):
 			Feed(source,db).run()
 		with futures.ThreadPoolExecutor(max_workers=threads) as ex:
@@ -344,5 +344,6 @@ def execute():
 		print("# Sequence execution")
 		for source in db.read_all(ENV["DB_COLLECTION_SOURCES"]):
 			Feed(source,db).run()
+
 # Execution
 execute()
