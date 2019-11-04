@@ -334,14 +334,14 @@ if db.read_all(ENV["DB_COLLECTION_SOURCES"]).count() == 0:
 def execute():
 	threads = int(ENV["THREADS"])
 	if threads > 1:
-		print("# Threaded execution (",threads," threads)")
+		print(str(datetime.now()) + " # Threaded execution (",threads," threads)")
 		def exec_feed(source):
 			Feed(source,db).run()
 		with futures.ThreadPoolExecutor(max_workers=threads) as ex:
 			results = ex.map(exec_feed, db.read_all(ENV["DB_COLLECTION_SOURCES"]))
-		print("# Finished threaded execution")
+		print(str(datetime.now()) + " # Finished threaded execution")
 	else:
-		print("# Sequence execution")
+		print(str(datetime.now()) + " # Sequence execution")
 		for source in db.read_all(ENV["DB_COLLECTION_SOURCES"]):
 			Feed(source,db).run()
 
