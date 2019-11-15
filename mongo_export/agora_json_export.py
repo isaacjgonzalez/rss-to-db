@@ -34,10 +34,14 @@ for category in categories:
     for post in db[category].find().sort("published_at_time",-1).limit(20):
         p = {}
         for key,value in post.items():
+            # Scape some json values
             if key in ["_id","saved_at"]:
                 p[key] = json_util.dumps(value)
             else:
                 p[key] = value
+            # Cache image thumbnails
+            
+
         posts.append(p)
     exported_info[category] = {"sources":sources_of_category,"posts":posts}
 
