@@ -10,6 +10,7 @@ import rss_to_db
 
 def job():
     rss_to_db.execute()
+    import export_to_json
 
 
 schedule.every().hour.do(job)
