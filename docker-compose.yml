@@ -8,6 +8,8 @@ services:
     depends_on:
     - "mongo"
     build: .
+    volumes:
+      - "./data:/data"
 
   mongo:
     image: mongo:4.2

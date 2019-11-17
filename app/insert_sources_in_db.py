@@ -41,4 +41,4 @@ def insert_sources_in_db(filename,name_position,collection_position,feed_url_pos
 
 ## MAIN ##
 
-insert_sources_in_db('data_sources/enderezos_agora.csv',0,1,3)
+insert_sources_in_db('../data/data_sources/enderezos_agora.csv',0,1,3)

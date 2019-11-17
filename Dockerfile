@@ -1,4 +1,5 @@
 FROM python:3
+RUN mkdir -p /data
 WORKDIR /app
 COPY requirements.txt requirements.txt
 RUN pip3 install --upgrade setuptools pip

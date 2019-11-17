@@ -246,7 +246,7 @@ class DatabaseMongo:
 # Some parameters are useless but we keep they to have the same functions than the rest of the db objects (in the future we will make a strategy pattern to encapsulate everything under a parent class)
 class DatabaseFile:
 	def __init__(self,host,port,db_name):
-		self.db = db_name + "/"
+		self.db = "../data/"+db_name + "/"
 
 	# Function to append a json "manually" to a file to avoid load all the file and join and store
 	def append_to_json(self,json_dump,path):
@@ -325,9 +325,9 @@ if ENV["DB_TYPE"] in ["FILE"] or ENV["DOWNLOAD"] == "ON":
 	db = DatabaseFile("","",ENV["DB_NAME"])
 elif ENV["DB_TYPE"] in ["MONGODB","MONGO"]:
 	db = DatabaseMongo(ENV["DB_HOST"],  int(ENV["DB_PORT"]),ENV["DB_NAME"])
-# Initialize data
-if db.read_all(ENV["DB_COLLECTION_SOURCES"]).count() == 0:
-	import insert_sources_in_db
+	# Initialize data
+	if db.read_all(ENV["DB_COLLECTION_SOURCES"]).count() == 0:
+		import insert_sources_in_db
 
 
 # Execute the script
