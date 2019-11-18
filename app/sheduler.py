@@ -19,6 +19,7 @@ schedule.every().hour.do(job)
 # First execution
 print("First execution")
 rss_to_db.execute()
+import export_to_json
 # Sheduled execution
 while True:
     schedule.run_pending()

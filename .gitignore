@@ -1,2 +1,4 @@
 __pycache__
 app/__pycache__
+data/export/*
+data/image_cache/*

@@ -28,6 +28,9 @@ from newspaper import Article
 import opengraph
 
 
+from image_cache import image_download_create_thumbnails
+
+
 
 def struct_time_to_timestamp(struct_time):
 	return time.mktime(struct_time)
@@ -64,6 +67,8 @@ class Feed:
 			self.store()
 		if ENV["DOWNLOAD"] == "ON":
 			self.enclosures()
+		if ENV["IMAGE_CACHE"] == "ON":
+			self.image_cache()
 		self.update_feed_info()
 		print(self.create_log_info())
 		if len(self.errors)>0:
@@ -170,6 +175,19 @@ class Feed:
 			self.errors.append(" Error in enclosure download")
 			return -1
 		return 1
+
+	def image_cache(self):
+		for i in range(len(self.items)):
+			try:
+				image_url = self.items[i]["image-newspaper3k"]
+				if image_url == "":
+					image_url = self.items[i]["image-opengraph"]
+				image_filename = image_download_create_thumbnails(image_url,self.info["name"])
+			except:
+				self.errors.append(" Error in image_cache")
+
+			self.items[i]["image_cache"] = image_filename
+		return 0
 
 	def enhance_newspaper(self):
 		for i in range(len(self.items)):
@@ -293,9 +311,9 @@ class DatabaseFile:
 			file = wget.download(url_file)
 			os.rename(file,self.db + collection+"/"+file)
 		except Exception as e:
-			print(" Error downloading with WGET: ",filename," e: ",e)
+			print(str(datetime.now()) +" Error downloading with WGET: ",filename," e: ",e)
 		finally:
-			print(" Download finished ", file)
+			print(str(datetime.now()) +" Download finished ", file)
 		return 1
 
 
@@ -303,7 +321,7 @@ class DatabaseFile:
 ###### MAIN ######
 
 # Default ENV
-default_env = {"DB_TYPE":"MONGO","DB_NAME":"feeds","DB_COLLECTION_SOURCES":"0_sources","DB_HOST":"localhost","DB_PORT": "27017","THREADS":"32","DOWNLOAD":"OFF"}
+default_env = {"DB_TYPE":"MONGO","DB_NAME":"feeds","DB_COLLECTION_SOURCES":"0_sources","DB_HOST":"localhost","DB_PORT": "27017","THREADS":"32","DOWNLOAD":"OFF","IMAGE_CACHE":"OFF"}
 # Command line ENV
 command_line_arguments = {}
 # Operative System ENV
