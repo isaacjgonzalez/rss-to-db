@@ -56,19 +56,19 @@ class Feed:
 			self.info["last_time_item"] = 0
 
 	def run(self):
-		#.print_feed_name()
+		#self.print_feed_name()
 		fetch_code = self.fetch_rss()
 		if fetch_code <0:
 			return -1
 		number_of_items = self.parse_rss()
 		self.enhance_newspaper()
 		self.enhance_opengraph()
+		if ENV["IMAGE_CACHE"] == "ON":
+			self.image_cache()
 		if number_of_items > 0:
 			self.store()
 		if ENV["DOWNLOAD"] == "ON":
 			self.enclosures()
-		if ENV["IMAGE_CACHE"] == "ON":
-			self.image_cache()
 		self.update_feed_info()
 		print(self.create_log_info())
 		if len(self.errors)>0:
@@ -156,7 +156,8 @@ class Feed:
 				# Only getting the link to the first element of the enclosure, it depends on how rss is formed and maybe podcast need to get more links
 				item["enclosure"] = entry.enclosures[0]["href"]
 			except:
-				self.errors.append(" Warning: no enclosure")
+				#self.errors.append(" Warning: no enclosure")
+				item["enclosure"] = ""
 
 			#item["content_text"] = html2text.html2text(item["content_html"])
 			self.items.append(item)
@@ -183,10 +184,10 @@ class Feed:
 				if image_url == "":
 					image_url = self.items[i]["image-opengraph"]
 				image_filename = image_download_create_thumbnails(image_url,self.info["name"])
-			except:
-				self.errors.append(" Error in image_cache")
-
-			self.items[i]["image_cache"] = image_filename
+				self.items[i]["image_cache"] = image_filename
+			except Exception as e:
+				self.errors.append(" Error in image_cache: "+str(e))
+				self.items[i]["image_cache"] = ""
 		return 0
 
 	def enhance_newspaper(self):
@@ -352,12 +353,13 @@ elif ENV["DB_TYPE"] in ["MONGODB","MONGO"]:
 def execute():
 	threads = int(ENV["THREADS"])
 	if threads > 1:
-		print(str(datetime.now()) + " # Threaded execution (",threads," threads)")
+		print(str(datetime.now()) + " # Execution (",threads," threads)")
 		def exec_feed(source):
 			Feed(source,db).run()
 		with futures.ThreadPoolExecutor(max_workers=threads) as ex:
-			results = ex.map(exec_feed, db.read_all(ENV["DB_COLLECTION_SOURCES"]))
-		print(str(datetime.now()) + " # Finished threaded execution")
+			sources = db.read_all(ENV["DB_COLLECTION_SOURCES"])
+			results = ex.map(exec_feed, sources)
+		print(str(datetime.now()) + " # Finished execution")
 	else:
 		print(str(datetime.now()) + " # Sequence execution")
 		for source in db.read_all(ENV["DB_COLLECTION_SOURCES"]):

@@ -9,6 +9,8 @@ from bson import json_util
 import pprint
 import json
 import os
+from datetime import datetime
+
 
 # Connect db
 COLLECTION_NAME_SOURCES = "0_sources"
@@ -66,3 +68,5 @@ if not os.path.exists(directory):
 
 with open(directory+'agora_export.json', 'w') as fp:
     json.dump(exported_info, fp)
+
+print(str(datetime.now()) + "Export to json")

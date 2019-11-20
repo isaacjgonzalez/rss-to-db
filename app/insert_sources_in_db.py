@@ -40,7 +40,7 @@ def insert_sources_in_db(filename,name_position,collection_position,feed_url_pos
           print(row)
           client[COLLECTION_NAME_SOURCES].insert_one(row)
           i+=1
-    print(str(i) + "sources added to db in initialization")
+    print(str(i) + " sources added to db in initialization")
 
 ## MAIN ##
 
