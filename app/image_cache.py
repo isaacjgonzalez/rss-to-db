@@ -12,9 +12,13 @@ if not os.path.exists(folder):
 
 def image_download_create_thumbnails(image_url,sufix_filename=''):
     #image_url = "http://www.mazarelos.gal/wp-content/uploads/2019/10/guerriller@s.png"
+
+    if image_url == "":
+        return ""
+
     img = Image.open(urlopen(image_url))
 
-    filename = str(datetime.now()) + '-' + sufix_filename.replace(" ", "_").replace('á','a').replace('é','e').replace('í','i').replace('ó','o').replace('ú','u')
+    filename = datetime.now().strftime("%Y%m%d%H%M%S") + '-' + sufix_filename.replace(" ", "_").replace('á','a').replace('é','e').replace('í','i').replace('ó','o').replace('ú','u')
 
     if len(filename) > 40:
         filename = filename[0:40]

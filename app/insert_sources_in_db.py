@@ -9,7 +9,7 @@ import os
 
 # Insert values in csv file (separated by tab) and use the position in each row to get name, collection (if not available place -1) and feed_url
 def insert_sources_in_db(filename,name_position,collection_position,feed_url_position):
-    COLLECTION_NAME_SOURCES = "0_sources"
+
     path = os.path.dirname(os.path.abspath(__file__))
     #print(path)
 
@@ -25,7 +25,10 @@ def insert_sources_in_db(filename,name_position,collection_position,feed_url_pos
         db_host = os.environ['DB_HOST']
     else:
         db_host = '0.0.0.0'
-
+    if 'COLLECTION_NAME_SOURCES' in os.environ:
+        COLLECTION_NAME_SOURCES = os.environ['COLLECTION_NAME_SOURCES']
+    else:
+        COLLECTION_NAME_SOURCES = "0_sources"
     print("Conecting to db...  Host: "+str(db_host)+" port: "+str(db_port))
     client = MongoClient(db_host, db_port)[DB_NAME]
 
