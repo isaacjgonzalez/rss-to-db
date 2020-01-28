@@ -29,7 +29,7 @@ import opengraph
 
 
 from image_cache import image_download_create_thumbnails
-
+import post_to_wp
 
 
 def struct_time_to_timestamp(struct_time):
@@ -69,6 +69,8 @@ class Feed:
 			self.store()
 		if ENV["DOWNLOAD"] == "ON":
 			self.enclosures()
+		if ENV["POST_TO_WP"] == "ON":
+			self.post_to_wp()
 		self.update_feed_info()
 		print(self.create_log_info())
 		if len(self.errors)>0:
@@ -188,6 +190,15 @@ class Feed:
 			except Exception as e:
 				self.errors.append(" Error in image_cache: "+str(e))
 				self.items[i]["image_cache"] = ""
+		return 0
+
+	def post_to_wp(self):
+		for item in self.items:
+			image = None
+			if "image-opengraph" in item:
+				image = item["image-opengraph"]
+			print(item["saved_at"])
+			post_to_wp.post(item["saved_at"], item["title"],item["content_html"],item["full_text-newspaper3k"],self.info["collection"],item["link"],image)
 		return 0
 
 	def enhance_newspaper(self):
@@ -322,7 +333,7 @@ class DatabaseFile:
 ###### MAIN ######
 
 # Default ENV
-default_env = {"DB_TYPE":"MONGO","DB_NAME":"feeds","DB_COLLECTION_SOURCES":"0_sources","DB_HOST":"localhost","DB_PORT": "27017","THREADS":"32","DOWNLOAD":"OFF","IMAGE_CACHE":"OFF"}
+default_env = {"DB_TYPE":"MONGODB","DB_NAME":"feeds","DB_COLLECTION_SOURCES":"0_sources","DB_HOST":"localhost","DB_PORT": "27017","THREADS":"1","DOWNLOAD":"OFF","IMAGE_CACHE":"OFF","POST_TO_WP":"ON"}
 # Command line ENV
 command_line_arguments = {}
 # Operative System ENV
