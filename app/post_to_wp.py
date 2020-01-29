@@ -23,7 +23,7 @@ folder = "../data/image_cache_wp/"
 if not os.path.exists(folder):
     os.makedirs(folder)
 
-def post_to_wp(postdatetime, title, excerpt, content, categories, image_url=None):
+def post_to_wp(published_at_str, title, excerpt, content, categories, image_url=None):
     image_id = None
     if not image_url == None:
         image_filename = image_url.split('/')[-1]
@@ -35,7 +35,7 @@ def post_to_wp(postdatetime, title, excerpt, content, categories, image_url=None
             image_id = json.loads(image_request.content)['id']
 
     post = {
-            'date': str(postdatetime),
+            'date': published_at_str,
     		'title': title,
     		'excerpt': excerpt,
     		'content': content,
@@ -44,7 +44,7 @@ def post_to_wp(postdatetime, title, excerpt, content, categories, image_url=None
             'status': 'publish',
     		'categories':categories
     		}
-    print(post)
+
     if image_id != None:
         post['featured_media'] = image_id
 
@@ -79,13 +79,13 @@ def add_link_to_post(post_id,link_to):
 
 categorias = {"Cultura":"4","Cinema":"5","Literatura":"6","Culinaria":"7","Ensino":"8","Lecer":"9","Humor":"10","Historia":"11","Música":"12","Divulgación":"13","Tecnoloxía":"14","Deporte":"15","Tendencias":"16","Ciencia":"17","Principal":"18","Superior":"19"}
 
-def post(postdatetime, title, excerpt, content, category, url, image_url=None):
+def post(published_at_str, title, excerpt, content, category, url, image_url=None):
     if category in categorias.keys():
         number_of_categories = [categorias[category]]
     else:
         number_of_categories = [13]
 
-    id = post_to_wp(postdatetime, title, excerpt, content, number_of_categories, image_url)
+    id = post_to_wp(published_at_str, title, excerpt, content, number_of_categories, image_url)
     add_link_to_post(id,url)
 
 

@@ -197,8 +197,7 @@ class Feed:
 			image = None
 			if "image-opengraph" in item:
 				image = item["image-opengraph"]
-			print(item["saved_at"])
-			post_to_wp.post(item["saved_at"], item["title"],item["content_html"],item["full_text-newspaper3k"],self.info["collection"],item["link"],image)
+			post_to_wp.post(item["published_at_str"], item["title"],item["content_html"],item["full_text-newspaper3k"],self.info["collection"],item["link"],image)
 		return 0
 
 	def enhance_newspaper(self):
