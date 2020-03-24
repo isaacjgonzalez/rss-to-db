@@ -7,6 +7,7 @@ import json
 import base64
 import io
 import urllib.request
+import urllib.parse
 import mysql.connector
 from datetime import datetime
 
@@ -28,7 +29,11 @@ def post_to_wp(published_at_str, title, excerpt, content, categories, image_url=
     if not image_url == None:
         image_filename = image_url.split('/')[-1]
         image_filename = folder+image_filename
-        urllib.request.urlretrieve(image_url, image_filename)
+        url = urllib.parse.urlsplit(image_url)
+        url = list(url)
+        url[2] = urllib.parse.quote(url[2])
+        url = urllib.parse.urlunsplit(url)
+        urllib.request.urlretrieve(url, image_filename)
         media = { 'file': open(image_filename,'rb'),'caption': title}
         image_request = requests.post(url + '/media', headers=headers, files=media)
         if image_request.status_code == 201:
