@@ -10,6 +10,7 @@ import urllib.request
 import urllib.parse
 import mysql.connector
 from datetime import datetime
+from dateutil import parser
 
 # This load the config
 from post_to_wp_config import *
@@ -25,17 +26,20 @@ if not os.path.exists(folder):
     os.makedirs(folder)
 
 def post_to_wp(published_at_str, title, excerpt, content, categories, image_url=None):
+    #print(published_at_str, title, excerpt, content, categories, image_url)
     image_id = None
     if not image_url == None:
         image_filename = image_url.split('/')[-1]
         image_filename = folder+image_filename
-        url = urllib.parse.urlsplit(image_url)
-        url = list(url)
-        url[2] = urllib.parse.quote(url[2])
-        url = urllib.parse.urlunsplit(url)
-        urllib.request.urlretrieve(url, image_filename)
+        # Convert UTF8 url to escaped url: https://stackoverflow.com/questions/4389572/how-to-fetch-a-non-ascii-url-with-python-urlopen
+        aux_url = urllib.parse.urlsplit(image_url)
+        aux_url = list(aux_url)
+        aux_url[2] = urllib.parse.quote(aux_url[2])
+        image_url = urllib.parse.urlunsplit(aux_url)
+
+        urllib.request.urlretrieve(image_url, image_filename)
         media = { 'file': open(image_filename,'rb'),'caption': title}
-        image_request = requests.post(url + '/media', headers=headers, files=media)
+        image_request = requests.post(wpapi_url + '/media', headers=headers, files=media)
         if image_request.status_code == 201:
             image_id = json.loads(image_request.content)['id']
 
@@ -53,10 +57,12 @@ def post_to_wp(published_at_str, title, excerpt, content, categories, image_url=
     if image_id != None:
         post['featured_media'] = image_id
 
-    post_request = requests.post(url + '/posts', headers=headers, json=post)
+    post_request = requests.post(wpapi_url + '/posts', headers=headers, json=post)
+    print(post_request)
 
     if post_request.status_code == 201:
         return json.loads(post_request.content.decode('utf-8'))['id']
+    print("Error in post_to_wp: ",post_request.status_code)
     return -1
 
 # Function to add to add the custom permalink
@@ -82,19 +88,20 @@ def add_link_to_post(post_id,link_to):
 
     mydb.commit()
 
-categorias = {"Cultura":"4","Cinema":"5","Literatura":"6","Culinaria":"7","Ensino":"8","Lecer":"9","Humor":"10","Historia":"11","Música":"12","Divulgación":"13","Tecnoloxía":"14","Deporte":"15","Tendencias":"16","Ciencia":"17","Principal":"18","Superior":"19"}
 
 def post(published_at_str, title, excerpt, content, category, url, image_url=None):
     if category in categorias.keys():
         number_of_categories = [categorias[category]]
     else:
-        number_of_categories = [13]
+        number_of_categories = [22]
 
-    id = post_to_wp(published_at_str, title, excerpt, content, number_of_categories, image_url)
+    published_at = parser.parse(published_at_str)
+
+    id = post_to_wp(str(published_at), title, excerpt, content, number_of_categories, image_url)
     add_link_to_post(id,url)
 
 
 
 if __name__ == '__main__':
     # Example
-    post("Chegou Podgalego","Resumo","Contido",[13],"https://isaacgonzalez.eu/imaxes/capura_podgalego.png","https://podgalego.agora.gal")
+    post("Wed, 25 Mar 2020 17:49:24 +0000","Chegou Podgalego","Resumo","Contido","Cultura","https://podgalego.agora.gal","https://isaacgonzalez.eu/imaxes/capura_podgalego.png")
