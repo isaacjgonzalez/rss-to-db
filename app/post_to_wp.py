@@ -58,7 +58,7 @@ def post_to_wp(published_at_str, title, excerpt, content, categories, image_url=
         post['featured_media'] = image_id
 
     post_request = requests.post(wpapi_url + '/posts', headers=headers, json=post)
-    
+
     if post_request.status_code == 201:
         return json.loads(post_request.content.decode('utf-8'))['id']
     print("Error in post_to_wp: ",post_request.status_code)

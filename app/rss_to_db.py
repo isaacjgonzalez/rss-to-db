@@ -40,10 +40,9 @@ last_opengraph_image = ""
 def opengraph_improved(link):
 	global last_opengraph_image
 	try:
-		image = opengraph.OpenGraph(url=link).image
-		print(last_opengraph_image)
-		print(image)
-		print()
+		image = opengraph.OpenGraph(url=link)
+		if image != None
+			image = image.image
 		if image == last_opengraph_image:
 			return ""
 	except Exception as e:
@@ -216,7 +215,7 @@ class Feed:
 			image = None
 			if "image-opengraph" in item:
 				image = item["image-newspaper3k"]
-			post_to_wp.post(item["published_at_str"], item["title"],item["content_html"],item["full_text-newspaper3k"],self.info["collection"],item["link"],image)
+			post_to_wp.post(self.info["name"],item["published_at_str"], item["title"],item["content_html"],item["full_text-newspaper3k"],self.info["collection"],item["link"],image)
 		return 0
 
 	def enhance_newspaper(self):
