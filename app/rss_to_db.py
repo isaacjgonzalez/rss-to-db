@@ -35,6 +35,23 @@ import post_to_wp
 def struct_time_to_timestamp(struct_time):
 	return time.mktime(struct_time)
 
+# Dirty patch to solve the bug of Opengraph. This patch only works in squential mode!!
+last_opengraph_image = ""
+def opengraph_improved(link):
+	global last_opengraph_image
+	try:
+		image = opengraph.OpenGraph(url=link).image
+		print(last_opengraph_image)
+		print(image)
+		print()
+		if image == last_opengraph_image:
+			return ""
+	except Exception as e:
+		print("error in opengraph_improved: ",e)
+		return ""
+	last_opengraph_image = image
+	return image
+
 
 class Feed:
 	def __init__(self,feed_info,db):
@@ -75,6 +92,8 @@ class Feed:
 		print(self.create_log_info())
 		if len(self.errors)>0:
 			print(self.create_log_error())
+		#print(self.__dict__)
+		#print()
 		return number_of_items
 
 	def fetch_rss(self):
@@ -196,7 +215,7 @@ class Feed:
 		for item in self.items:
 			image = None
 			if "image-opengraph" in item:
-				image = item["image-opengraph"]
+				image = item["image-newspaper3k"]
 			post_to_wp.post(item["published_at_str"], item["title"],item["content_html"],item["full_text-newspaper3k"],self.info["collection"],item["link"],image)
 		return 0
 
@@ -214,12 +233,14 @@ class Feed:
 					self.errors.append(" Warn no Newspaper3K: " + str(e))
 		return 0
 
+	# There is a huge bug in this library: when it doesn't find a image it show the last image it founded previously!
 	def enhance_opengraph(self):
 		for i in range(len(self.items)):
 			if "link" in self.items[i]:
 				try:
-					opengraph_item = opengraph.OpenGraph(url=self.items[i]["link"])
-					self.items[i]["image-opengraph"] = opengraph_item.image
+					opengraph_item = None
+					image = opengraph_improved(self.items[i]["link"])
+					self.items[i]["image-opengraph"] = image
 				except Exception as e:
 					self.errors.append(" Warn no Opengraph: " + str(e))
 		return 0
