@@ -41,7 +41,7 @@ def opengraph_improved(link):
 	global last_opengraph_image
 	try:
 		image = opengraph.OpenGraph(url=link)
-		if image != None
+		if image != None:
 			image = image.image
 		if image == last_opengraph_image:
 			return ""
@@ -155,6 +155,7 @@ class Feed:
 			except Exception as e:
 				self.errors.append(" Error in published_parsed! " + str(e))
 
+			item["title"] = ""
 			try:
 				item.update({"title" : entry.title, "link" : entry.link , "saved_at" : datetime.now()})
 			except:
@@ -215,12 +216,18 @@ class Feed:
 			image = None
 			if "image-opengraph" in item:
 				image = item["image-newspaper3k"]
-			post_to_wp.post(self.info["name"],item["published_at_str"], item["title"],item["content_html"],item["full_text-newspaper3k"],self.info["collection"],item["link"],image)
+			try:
+				post_to_wp.post(item["published_at_str"], item["title"],item["content_html"],item["full_text-newspaper3k"],self.info["collection"],item["link"],image)
+			except Exception as e:
+				self.errors.append(" Error in post_to_wp: "+str(e))
 		return 0
 
 	def enhance_newspaper(self):
 		for i in range(len(self.items)):
 			if "link" in self.items[i]:
+				self.items[i]["full_text-newspaper3k"] = ""
+				self.items[i]["image-newspaper3k"] = ""
+				self.items[i]["movies-newspaper3k"] = ""
 				try:
 					article = Article(self.items[i]["link"])
 					article.download()

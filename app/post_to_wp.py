@@ -36,12 +36,14 @@ def post_to_wp(published_at_str, title, excerpt, content, categories, image_url=
         aux_url = list(aux_url)
         aux_url[2] = urllib.parse.quote(aux_url[2])
         image_url = urllib.parse.urlunsplit(aux_url)
-
-        urllib.request.urlretrieve(image_url, image_filename)
-        media = { 'file': open(image_filename,'rb'),'caption': title}
-        image_request = requests.post(wpapi_url + '/media', headers=headers, files=media)
-        if image_request.status_code == 201:
-            image_id = json.loads(image_request.content)['id']
+        try:
+            urllib.request.urlretrieve(image_url, image_filename)
+            media = { 'file': open(image_filename,'rb'),'caption': title}
+            image_request = requests.post(wpapi_url + '/media', headers=headers, files=media)
+            if image_request.status_code == 201:
+                image_id = json.loads(image_request.content)['id']
+        except Exception as e:
+            print("Error in post_to_wp at image retrive: ",e)
 
     post = {
             'date': published_at_str,
@@ -92,7 +94,7 @@ def post(published_at_str, title, excerpt, content, category, url, image_url=Non
     if category in categorias.keys():
         number_of_categories = [categorias[category]]
     else:
-        number_of_categories = [22]
+        number_of_categories = [30] # Sen categoria
 
     published_at = parser.parse(published_at_str)
 
