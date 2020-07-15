@@ -11,7 +11,6 @@ if not os.path.exists(folder):
     os.makedirs(folder)
 
 def image_download_create_thumbnails(image_url,sufix_filename=''):
-    #image_url = "http://www.mazarelos.gal/wp-content/uploads/2019/10/guerriller@s.png"
 
     if image_url == "":
         return ""

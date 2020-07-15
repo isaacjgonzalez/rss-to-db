@@ -46,5 +46,7 @@ def insert_sources_in_db(filename,name_position,collection_position,feed_url_pos
     print(str(i) + " sources added to db in initialization")
 
 ## MAIN ##
-
-insert_sources_in_db('../data/data_sources/enderezos_agora.csv',0,1,3)
+if not os.path.exists('../config/sources.tsv'=:
+    print("ERROR: I can't read /config/sources.tsv file, please be sure it exists or I can read it!")
+else:
+    insert_sources_in_db('../config/sources.tsv',2,3,0)

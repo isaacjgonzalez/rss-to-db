@@ -359,7 +359,7 @@ class DatabaseFile:
 ###### MAIN ######
 
 # Default ENV
-default_env = {"DB_TYPE":"MONGODB","DB_NAME":"feeds","DB_COLLECTION_SOURCES":"0_sources","DB_HOST":"localhost","DB_PORT": "27017","THREADS":"1","DOWNLOAD":"OFF","IMAGE_CACHE":"OFF","POST_TO_WP":"ON"}
+default_env = {"DB_TYPE":"MONGODB","DB_NAME":"feeds","DB_COLLECTION_SOURCES":"0_sources","DB_HOST":"localhost","DB_PORT": "27017","THREADS":"1","DOWNLOAD":"OFF","IMAGE_CACHE":"OFF","POST_TO_WP":"OFF"}
 # Command line ENV
 command_line_arguments = {}
 # Operative System ENV
@@ -373,8 +373,9 @@ if __name__ == '__main__':
 	args = parser.parse_args()
 	command_line_arguments = {key:value for key, value in vars(args).items() if value}
 
-# Generate ENV first with command line ENV, then Operative system ENV and last with default_env
+# Generate ENV: first with command line ENV, then Operative system ENV and last with default_env
 ENV = ChainMap(command_line_arguments, os_env, default_env) # ENV is a special dict made by several dict, when access to a key, use the key with more priority if it exists
+print("ENV: ",ENV)
 
 # DB Initialization
 if ENV["DB_TYPE"] in ["FILE"] or ENV["DOWNLOAD"] == "ON":

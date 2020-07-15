@@ -12,7 +12,11 @@ import mysql.connector
 from datetime import datetime
 from dateutil import parser
 
+
 # This load the config
+
+import sys
+sys.path.insert(0, '../config/')
 from post_to_wp_config import *
 
 
@@ -105,4 +109,4 @@ def post(published_at_str, title, excerpt, content, category, url, image_url=Non
 
 if __name__ == '__main__':
     # Example
-    post("Wed, 25 Mar 2020 17:49:24 +0000","Chegou Podgalego","Resumo","Contido","Cultura","https://podgalego.agora.gal","https://isaacgonzalez.eu/imaxes/capura_podgalego.png")
+    post("Wed, 25 Jun 2020 17:49:24 +0000","TEST: Chegou Podgalego","Resumo","Contido","Cultura","https://podgalego.agora.gal","https://isaacgonzalez.eu/imaxes/capura_podgalego.png")

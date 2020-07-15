@@ -10,6 +10,7 @@ services:
     build: .
     volumes:
       - "./data:/data"
+      - "./config:/config"
 
   mongo:
     image: mongo:4.2
