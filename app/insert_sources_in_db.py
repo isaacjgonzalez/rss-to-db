@@ -35,7 +35,7 @@ def insert_sources_in_db(filename,name_position,collection_position,feed_url_pos
     i = 0
     with open(path+'/../data/'+filename) as file:
       for line in file:
-          elements = re.split(r'\t', line)
+          elements = map(str.strip, re.split(r'\t', line))
           if collection_position < 0:
               row = {"name":elements[name_position],"url":elements[feed_url_position]}
           else:
@@ -46,7 +46,7 @@ def insert_sources_in_db(filename,name_position,collection_position,feed_url_pos
     print(str(i) + " sources added to db in initialization")
 
 ## MAIN ##
-if not os.path.exists('../config/sources.tsv'=:
+if not os.path.exists('../config/sources.tsv'):
     print("ERROR: I can't read /config/sources.tsv file, please be sure it exists or I can read it!")
 else:
     insert_sources_in_db('../config/sources.tsv',2,3,0)
