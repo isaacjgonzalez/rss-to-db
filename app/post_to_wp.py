@@ -16,8 +16,11 @@ from dateutil import parser
 # This load the config
 
 import sys
-sys.path.insert(0, '../config/')
-from post_to_wp_config import *
+if os.path.exists("../config/post_to_wp_config.py"):
+    sys.path.insert(0, '../config/')
+    from post_to_wp_config import *
+else:
+    print("WARNING: No post_to_wp_config.py file found. Unable to use post_to_wp feature")
 
 
 # Headers
