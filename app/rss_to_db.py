@@ -29,7 +29,7 @@ import opengraph
 
 
 from image_cache import image_download_create_thumbnails
-import post_to_wp
+
 
 
 def struct_time_to_timestamp(struct_time):
@@ -364,6 +364,7 @@ default_env = {"DB_TYPE":"MONGODB","DB_NAME":"feeds","DB_COLLECTION_SOURCES":"0_
 command_line_arguments = {}
 # Operative System ENV
 os_env = {key:value for key, value in os.environ.items() if (key in default_env)} # os_env get the environment vars only if they exist in the default env of the this program
+print(os_env)
 
 # Command line argument parser
 if __name__ == '__main__':
@@ -378,13 +379,20 @@ ENV = ChainMap(command_line_arguments, os_env, default_env) # ENV is a special d
 print("ENV: ",ENV)
 
 # DB Initialization
-if ENV["DB_TYPE"] in ["FILE"] or ENV["DOWNLOAD"] == "ON":
+if ENV["DB_TYPE"] in ["FILE","file"] or ENV["DOWNLOAD"] == "ON":
 	db = DatabaseFile("","",ENV["DB_NAME"])
+	print("YES")
 elif ENV["DB_TYPE"] in ["MONGODB","MONGO"]:
 	db = DatabaseMongo(ENV["DB_HOST"],  int(ENV["DB_PORT"]),ENV["DB_NAME"])
 	# Initialize data
 	if db.read_all(ENV["DB_COLLECTION_SOURCES"]).count() == 0:
 		import insert_sources_in_db
+
+# Load libs if needed
+if ENV["POST_TO_WP"] == "ON":
+	import post_to_wp
+
+
 
 
 # Execute the script

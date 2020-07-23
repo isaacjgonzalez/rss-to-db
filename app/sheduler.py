@@ -5,13 +5,11 @@ import schedule
 import time
 
 import rss_to_db
-import export_to_json
 
 
 def job():
     rss_to_db.execute()
-    #export_to_json.export()
-
+    
 
 schedule.every().hour.do(job)
 
